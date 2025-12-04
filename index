@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测测你是不是猪 - 幻灯片模式</title>
+  <!-- Tailwind CSS v3 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#FFB6C1', // 浅粉色
+            secondary: '#F5F5F5', // 浅灰色
+            accent: '#FF69B4', // 亮粉色
+          },
+          fontFamily: {
+            sans: ['Arial Rounded MT Bold', 'Avenir', 'Helvetica', 'Arial', 'sans-serif'],
+          },
+          animation: {
+            'bounce-slow': 'bounce 2s infinite',
+            'wiggle': 'wiggle 1s ease-in-out infinite',
+            'pulse-slow': 'pulse 3s infinite',
+            'fade-in': 'fadeIn 0.5s ease-in-out',
+            'slide-in': 'slideIn 0.5s ease-in-out',
+          },
+          keyframes: {
+            wiggle: {
+              '0%, 100%': { transform: 'rotate(-3deg)' },
+              '50%': { transform: 'rotate(3deg)' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideIn: {
+              '0%': { transform: 'translateY(20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .text-shadow-lg {
+        text-shadow: 0 4px 8px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08);
+      }
+      .progress-ring-circle {
+        transition: stroke-dashoffset 0.35s;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+      }
+    }
+    
+    body {
+      touch-action: none; /* 防止长按弹出菜单 */
+      user-select: none; /* 防止文本选择 */
+      -webkit-tap-highlight-color: transparent; /* 移除点击高亮 */
+    }
+    
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0px); }
+    }
+    
+    .float-animation {
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    .progress-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+    }
+    
+    .progress-ring {
+      transform: rotate(-90deg);
+    }
+    
+    .progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    
+    .press-hint {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+    }
+    
+    /* 幻灯片样式 */
+    .slideshow-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .slideshow-modal.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .slideshow-content {
+      background: white;
+      border-radius: 24px;
+      padding: 30px;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+      transform: scale(0.8);
+      transition: transform 0.3s ease;
+    }
+    
+    .slideshow-modal.active .slideshow-content {
+      transform: scale(1);
+    }
+    
+    .slideshow-counter {
+      background: #FFB6C1;
+      color: white;
+      border-radius: 20px;
+      padding: 5px 15px;
+      font-size: 14px;
+      font-weight: bold;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+    
+    .slideshow-controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 25px;
+    }
+    
+    .slideshow-button {
+      padding: 10px 20px;
+      border-radius: 50px;
+      font-weight: bold;
+      transition: all 0.3s;
+      border: none;
+      cursor: pointer;
+    }
+    
+    .slideshow-button.primary {
+      background: #FFB6C1;
+      color: white;
+    }
+    
+    .slideshow-button.secondary {
+      background: #F5F5F5;
+      color: #333;
+    }
+    
+    .slideshow-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body class="bg-secondary min-h-screen flex flex-col items-center justify-center p-4">
+  <div class="container max-w-md mx-auto text-center">
+    <!-- 标题 -->
+    <h1 class="text-4xl md:text-5xl font-bold mb-6 text-primary text-shadow-lg">
+      测测你是不是猪 <span class="text-accent">🐷</span>
+    </h1>
+    
+    <!-- 功能按钮 -->
+    <div class="mb-6 flex gap-4 justify-center">
+      <button id="start-slideshow" class="bg-accent text-white py-3 px-8 rounded-full font-bold hover:bg-accent/80 transition-all transform hover:scale-105 active:scale-95 shadow-lg">
+        幻灯片模式
+      </button>
+    </div>
+    
+    <!-- 主内容区 -->
+    <div class="bg-white rounded-3xl shadow-lg p-6 mb-8 transform transition-all duration-300 hover:shadow-xl">
+      <!-- 测试区域 -->
+      <div id="test-area" class="mb-6">
+        <div class="progress-container mx-auto">
+          <!-- 圆形进度条 -->
+          <svg class="progress-ring" width="200" height="200">
+            <circle
+              class="text-gray-200"
+              stroke-width="10"
+              stroke="currentColor"
+              fill="transparent"
+              r="85"
+              cx="100"
+              cy="100"
+            />
+            <circle
+              id="progress-circle"
+              class="text-primary progress-ring-circle"
+              stroke-width="10"
+              stroke="currentColor"
+              fill="transparent"
+              r="85"
+              cx="100"
+              cy="100"
+              stroke-dasharray="534.07"
+              stroke-dashoffset="534.07"
+            />
+          </svg>
+          
+          <!-- 长按提示 -->
+          <div id="press-hint" class="press-hint">
+            <div class="text-5xl mb-2">👇</div>
+            <p class="text-lg text-gray-600">长按这里测试</p>
+          </div>
+          
+          <!-- 进度文本 -->
+          <div id="progress-text" class="progress-text hidden">
+            <span id="progress-percentage">0%</span>
+          </div>
+        </div>
+        
+        <!-- 提示文字 -->
+        <p id="instruction" class="text-gray-600 mt-6">
+          长按屏幕中间区域，看看你是什么猪！
+        </p>
+      </div>
+      
+      <!-- 结果区域 (初始隐藏) -->
+      <div id="result-area" class="hidden">
+        <div class="bg-primary/10 rounded-2xl p-6 flex flex-col items-center justify-center h-64 mb-6">
+          <img id="result-emoji" class="w-24 h-24 mb-4 float-animation" src="image/pig.png" alt="猪">
+          <h2 id="result-title" class="text-2xl font-bold text-gray-800 mb-2">猪</h2>
+          <p id="result-description" class="text-gray-600">
+            你是一只可爱的小猪猪！
+          </p>
+        </div>
+        
+        <button id="retest-button" class="hidden bg-primary text-white py-2 px-6 rounded-full font-medium mb-4 hover:bg-primary/80 transition-colors">
+          重新测试
+        </button>
+        
+        <p class="text-gray-500 text-sm">
+          提示：结果已保存，刷新不会改变哦！
+        </p>
+      </div>
+    </div>
+    
+    <!-- 页脚 -->
+    <footer class="text-gray-500 text-sm">
+      <p>作者：nanan <span class="text-primary">🐽</span></p>
+      <p class="mt-2">共收录 <span id="pig-count" class="font-bold text-accent">22</span> 种猪猪类型</p>
+    </footer>
+  </div>
+
+  <!-- 幻灯片模态框 -->
+  <div id="slideshow-modal" class="slideshow-modal">
+    <div class="slideshow-content animate-slide-in">
+      <div class="slideshow-counter">
+        <span id="current-index">1</span> / <span id="total-count">22</span>
+      </div>
+      
+      <div class="bg-primary/10 rounded-2xl p-8 mb-6">
+        <img id="slideshow-image" class="w-32 h-32 mx-auto mb-6 float-animation" src="image/pig.png" alt="猪">
+        <h2 id="slideshow-title" class="text-3xl font-bold text-gray-800 mb-3">猪</h2>
+        <p id="slideshow-description" class="text-gray-600 text-lg">
+          普通小猪
+        </p>
+      </div>
+      
+      <div class="slideshow-controls">
+        <button id="prev-pig" class="slideshow-button secondary">
+          上一个
+        </button>
+        <button id="pause-resume" class="slideshow-button primary">
+          暂停
+        </button>
+        <button id="next-pig" class="slideshow-button secondary">
+          下一个
+        </button>
+      </div>
+      
+      <div class="mt-6">
+        <button id="close-slideshow" class="text-gray-500 hover:text-gray-700 underline text-sm">
+          关闭幻灯片
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 结果数据
+    const pigResults = [
+      {
+        id: "human",
+        name: "人类",
+        emoji: "👤",
+        description: "检测不出猪元素，是人类吗？",
+        analysis: ""
+      },
+      {
+        id: "pig",
+        name: "猪",
+        emoji: "🐷",
+        description: "普通小猪",
+        analysis: ""
+      },
+      {
+        id: "black-pig",
+        name: "小黑猪",
+        emoji: "🐖",
+        description: "小黑猪，卤出猪脚了",
+        analysis: ""
+      },
+      {
+        id: "wild-boar",
+        name: "野猪",
+        emoji: "🐗",
+        description: "你是一只勇猛的野猪！",
+        analysis: ""
+      },
+      {
+        id: "zhuge-liang",
+        name: "猪葛亮",
+        emoji: "🐷🧠",
+        description: "猪里最聪明的一个",
+        analysis: ""
+      },
+      {
+        id: "pig-stamp",
+        name: "猪圆章",
+        emoji: "🐷🔴",
+        description: "《猪圈那些事》",
+        analysis: ""
+      },
+      {
+        id: "zombie-pig",
+        name: "僵尸猪",
+        emoji: "🧟🐷",
+        description: "喜欢的食物是猪脑",
+        analysis: ""
+      },
+      {
+        id: "skeleton-pig",
+        name: "骷髅猪",
+        emoji: "💀🐷",
+        description: "资深不死族",
+        analysis: ""
+      },
+      {
+        id: "pig-human",
+        name: "猪人",
+        emoji: "🐷👤",
+        description: "你是猪还是人？",
+        analysis: ""
+      },
+      {
+        id: "demon-pig",
+        name: "恶魔猪",
+        emoji: "😈🐷",
+        description: "满肚子坏心眼",
+        analysis: ""
+      },
+      {
+        id: "heaven-pig",
+        name: "天堂猪",
+        emoji: "😇🐷",
+        description: "似了喵~",
+        analysis: ""
+      },
+      {
+        id: "explosive-pig",
+        name: "爆破小猪",
+        emoji: "💣🐷",
+        description: "我跟你爆了！",
+        analysis: ""
+      },
+      {
+        id: "black-white-pig",
+        name: "黑白猪",
+        emoji: "⚫⚪🐷",
+        description: "串子",
+        analysis: ""
+      },
+      {
+        id: "pork-skewer",
+        name: "猪肉串",
+        emoji: "🍢",
+        description: "真正的串子",
+        analysis: ""
+      },
+      {
+        id: "magic-pig",
+        name: "魔法少猪",
+        emoji: "🪄🐷",
+        description: "马猪烧酒",
+        analysis: ""
+      },
+      {
+        id: "mechanical-pig",
+        name: "机械猪",
+        emoji: "🤖🐷",
+        description: "人机",
+        analysis: ""
+      },
+      {
+        id: "pig-ball",
+        name: "猪猪球",
+        emoji: "🏀🐷",
+        description: "滚了",
+        analysis: ""
+      },
+      {
+        id: "doll-pig",
+        name: "玩偶猪",
+        emoji: "🧸🐷",
+        description: "fufu小猪",
+        analysis: ""
+      },
+      {
+        id: "soul-pig",
+        name: "灵魂猪",
+        emoji: "👻🐷",
+        description: "从冥界归来的猪",
+        analysis: ""
+      },
+      {
+        id: "crystal-pig",
+        name: "水晶猪",
+        emoji: "💎🐷",
+        description: "珍贵又脆弱的小猪",
+        analysis: ""
+      },
+      {
+        id: "snow-pig",
+        name: "雪猪",
+        emoji: "❄️🐷",
+        description: "洁白的雪猪",
+        analysis: ""
+      },
+      {
+        id: "pig-cat",
+        name: "猪咪",
+        emoji: "🐷🐱",
+        description: "你是一只可爱的猪咪！",
+        analysis: ""
+      }
+    ];
+
+    // DOM 元素
+    const testArea = document.getElementById('test-area');
+    const resultArea = document.getElementById('result-area');
+    const progressCircle = document.getElementById('progress-circle');
+    const progressText = document.getElementById('progress-text');
+    const progressPercentage = document.getElementById('progress-percentage');
+    const pressHint = document.getElementById('press-hint');
+    const instruction = document.getElementById('instruction');
+    const resultEmoji = document.getElementById('result-emoji');
+    const resultTitle = document.getElementById('result-title');
+    const resultDescription = document.getElementById('result-description');
+    const retestButton = document.getElementById('retest-button');
+    
+    // 幻灯片相关DOM元素
+    const startSlideshowBtn = document.getElementById('start-slideshow');
+    const slideshowModal = document.getElementById('slideshow-modal');
+    const slideshowImage = document.getElementById('slideshow-image');
+    const slideshowTitle = document.getElementById('slideshow-title');
+    const slideshowDescription = document.getElementById('slideshow-description');
+    const currentIndexEl = document.getElementById('current-index');
+    const totalCountEl = document.getElementById('total-count');
+    const prevPigBtn = document.getElementById('prev-pig');
+    const nextPigBtn = document.getElementById('next-pig');
+    const pauseResumeBtn = document.getElementById('pause-resume');
+    const closeSlideshowBtn = document.getElementById('close-slideshow');
+    const pigCount = document.getElementById('pig-count');
+    
+    // 进度条参数
+    const circumference = 2 * Math.PI * 85; // 圆的周长
+    const requiredHoldTime = 3000; // 长按所需时间（毫秒）
+    let startTime = 0;
+    let isHolding = false;
+    let progressInterval;
+    
+    // 幻灯片相关变量
+    let currentSlideshowIndex = 0;
+    let isSlideshowPlaying = true;
+    let slideshowInterval;
+    const slideshowSpeed = 2000; // 每张图片显示时间（毫秒）
+    
+    // 初始化
+    function init() {
+      // 更新猪猪数量
+      pigCount.textContent = pigResults.length;
+      totalCountEl.textContent = pigResults.length;
+      
+      // 初始化进度条
+      progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+      progressCircle.style.strokeDashoffset = circumference;
+      
+      // 检查是否已有结果
+      try {
+        const savedResult = localStorage.getItem('pigTestResult');
+        if (savedResult) {
+          showResult(JSON.parse(savedResult));
+        }
+      } catch (error) {
+        console.error('读取本地存储失败:', error);
+        localStorage.removeItem('pigTestResult');
+      }
+      
+      // 初始化幻灯片
+      initSlideshow();
+    }
+    
+    // 初始化幻灯片
+    function initSlideshow() {
+      // 显示第一张图片
+      updateSlideshowDisplay();
+      
+      // 开始自动播放
+      startSlideshowAutoPlay();
+    }
+    
+    // 更新幻灯片显示
+    function updateSlideshowDisplay() {
+      const pig = pigResults[currentSlideshowIndex];
+      
+      // 使用原有的图片路径
+      const imageSrc = `image/${pig.id}.png`;
+      slideshowImage.src = imageSrc;
+      slideshowImage.alt = pig.name;
+      slideshowTitle.textContent = pig.name;
+      slideshowDescription.textContent = pig.description;
+      currentIndexEl.textContent = currentSlideshowIndex + 1;
+      
+      // 添加图片加载失败处理
+      slideshowImage.onerror = function() {
+        slideshowImage.src = 'image/pig.png';
+      };
+    }
+    
+    // 开始幻灯片自动播放
+    function startSlideshowAutoPlay() {
+      clearInterval(slideshowInterval);
+      if (isSlideshowPlaying) {
+        slideshowInterval = setInterval(() => {
+          currentSlideshowIndex = (currentSlideshowIndex + 1) % pigResults.length;
+          updateSlideshowDisplay();
+        }, slideshowSpeed);
+        pauseResumeBtn.textContent = '暂停';
+      }
+    }
+    
+    // 暂停/继续幻灯片
+    function toggleSlideshowPlay() {
+      isSlideshowPlaying = !isSlideshowPlaying;
+      if (isSlideshowPlaying) {
+        startSlideshowAutoPlay();
+        pauseResumeBtn.textContent = '暂停';
+      } else {
+        clearInterval(slideshowInterval);
+        pauseResumeBtn.textContent = '继续';
+      }
+    }
+    
+    // 显示上一张图片
+    function showPrevPig() {
+      currentSlideshowIndex = currentSlideshowIndex > 0 ? currentSlideshowIndex - 1 : pigResults.length - 1;
+      updateSlideshowDisplay();
+    }
+    
+    // 显示下一张图片
+    function showNextPig() {
+      currentSlideshowIndex = (currentSlideshowIndex + 1) % pigResults.length;
+      updateSlideshowDisplay();
+    }
+    
+    // 打开幻灯片
+    function openSlideshow() {
+      slideshowModal.classList.add('active');
+      document.body.style.overflow = 'hidden'; // 防止背景滚动
+      
+      // 重置到第一张
+      currentSlideshowIndex = 0;
+      updateSlideshowDisplay();
+      
+      // 确保自动播放
+      isSlideshowPlaying = true;
+      startSlideshowAutoPlay();
+    }
+    
+    // 关闭幻灯片
+    function closeSlideshow() {
+      slideshowModal.classList.remove('active');
+      document.body.style.overflow = 'auto'; // 恢复背景滚动
+      clearInterval(slideshowInterval);
+    }
+    
+    // 原有的测试功能保持不变
+    function setupOriginalTest() {
+      // 长按开始事件
+      function handleHoldStart(e) {
+        e.preventDefault();
+        if (localStorage.getItem('pigTestResult')) return;
+        
+        isHolding = true;
+        startTime = Date.now();
+        
+        progressText.classList.remove('hidden');
+        pressHint.classList.add('hidden');
+        instruction.textContent = '正在测试中...';
+        
+        progressInterval = setInterval(updateProgress, 30);
+        testArea.classList.add('scale-105');
+        testArea.style.transition = 'transform 0.2s';
+      }
+      
+      // 长按结束事件
+      function handleHoldEnd() {
+        if (localStorage.getItem('pigTestResult')) return;
+        
+        isHolding = false;
+        clearInterval(progressInterval);
+        resetProgress();
+        testArea.classList.remove('scale-105');
+        instruction.textContent = '长按屏幕中间区域，看看你是什么猪！';
+      }
+      
+      // 更新进度条
+      function updateProgress() {
+        if (!isHolding) return;
+        
+        const elapsedTime = Date.now() - startTime;
+        const progress = Math.min(elapsedTime / requiredHoldTime, 1);
+        const offset = circumference - (progress * circumference);
+        
+        progressCircle.style.strokeDashoffset = offset;
+        const percentage = Math.round(progress * 100);
+        progressPercentage.textContent = `${percentage}%`;
+        
+        if (progress >= 1) {
+          clearInterval(progressInterval);
+          generateResult();
+        }
+      }
+      
+      // 重置进度条
+      function resetProgress() {
+        clearInterval(progressInterval);
+        progressCircle.style.strokeDashoffset = circumference;
+        progressText.classList.add('hidden');
+        pressHint.classList.remove('hidden');
+        progressPercentage.textContent = '0%';
+      }
+      
+      // 生成随机结果
+      function generateResult() {
+        try {
+          playSound('complete');
+          const randomIndex = Math.floor(Math.random() * pigResults.length);
+          const result = pigResults[randomIndex];
+          localStorage.setItem('pigTestResult', JSON.stringify(result));
+          showResult(result);
+        } catch (error) {
+          console.error('生成结果失败:', error);
+          alert('生成结果失败，请重试！');
+          resetProgress();
+          instruction.textContent = '长按屏幕中间区域，看看你是什么猪！';
+        }
+      }
+      
+      // 显示结果
+      function showResult(result) {
+        testArea.classList.add('hidden');
+        resultArea.classList.remove('hidden');
+        retestButton.classList.remove('hidden');
+        
+        const imageSrc = `image/${result.id}.png`;
+        resultEmoji.src = imageSrc;
+        resultEmoji.alt = result.name;
+        resultTitle.textContent = result.name;
+        resultDescription.textContent = result.description;
+        
+        resultEmoji.onerror = function() {
+          resultEmoji.src = 'image/pig.png';
+        };
+        
+        resultArea.style.opacity = '0';
+        resultArea.style.transform = 'translateY(20px)';
+        resultArea.style.transition = 'opacity 0.5s, transform 0.5s';
+        
+        setTimeout(() => {
+          resultArea.style.opacity = '1';
+          resultArea.style.transform = 'translateY(0)';
+        }, 10);
+      }
+      
+      // 重新测试
+      function handleRetest() {
+        try {
+          localStorage.removeItem('pigTestResult');
+          resetProgress();
+          testArea.classList.remove('hidden');
+          resultArea.classList.add('hidden');
+          retestButton.classList.add('hidden');
+          instruction.textContent = '长按屏幕中间区域，看看你是什么猪！';
+        } catch (error) {
+          console.error('重新测试失败:', error);
+        }
+      }
+      
+      // 添加事件监听
+      const progressContainer = document.querySelector('.progress-container');
+      if (progressContainer) {
+        progressContainer.addEventListener('mousedown', handleHoldStart);
+        progressContainer.addEventListener('touchstart', handleHoldStart);
+      }
+      
+      document.addEventListener('mouseup', handleHoldEnd);
+      document.addEventListener('touchend', handleHoldEnd);
+      document.addEventListener('touchcancel', handleHoldEnd);
+      
+      retestButton.addEventListener('click', handleRetest);
+    }
+    
+    // 播放音效
+    function playSound(type) {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        if (type === 'complete') {
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+          oscillator.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+          oscillator.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2);
+          
+          gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+          
+          oscillator.start(audioCtx.currentTime);
+          oscillator.stop(audioCtx.currentTime + 0.3);
+        }
+      } catch (error) {
+        console.error('播放音效失败:', error);
+      }
+    }
+    
+    // 事件监听
+    function setupEventListeners() {
+      // 幻灯片按钮
+      startSlideshowBtn.addEventListener('click', openSlideshow);
+      
+      // 幻灯片控制
+      prevPigBtn.addEventListener('click', () => {
+        showPrevPig();
+        // 暂停一下自动播放，让用户有时间查看
+        if (isSlideshowPlaying) {
+          clearInterval(slideshowInterval);
+          setTimeout(startSlideshowAutoPlay, 3000);
+        }
+      });
+      
+      nextPigBtn.addEventListener('click', () => {
+        showNextPig();
+        // 暂停一下自动播放，让用户有时间查看
+        if (isSlideshowPlaying) {
+          clearInterval(slideshowInterval);
+          setTimeout(startSlideshowAutoPlay, 3000);
+        }
+      });
+      
+      pauseResumeBtn.addEventListener('click', toggleSlideshowPlay);
+      
+      closeSlideshowBtn.addEventListener('click', closeSlideshow);
+      
+      // 点击模态框背景关闭
+      slideshowModal.addEventListener('click', (e) => {
+        if (e.target === slideshowModal) {
+          closeSlideshow();
+        }
+      });
+      
+      // 键盘控制
+      document.addEventListener('keydown', (e) => {
+        if (slideshowModal.classList.contains('active')) {
+          switch(e.key) {
+            case 'ArrowLeft':
+              prevPigBtn.click();
+              break;
+            case 'ArrowRight':
+              nextPigBtn.click();
+              break;
+            case ' ':
+              pauseResumeBtn.click();
+              break;
+            case 'Escape':
+              closeSlideshow();
+              break;
+          }
+        }
+      });
+    }
+    
+    // 初始化应用
+    init();
+    setupOriginalTest();
+    setupEventListeners();
+  </script>
+</body>
+</html>
